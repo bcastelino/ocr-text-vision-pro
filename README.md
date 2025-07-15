@@ -42,7 +42,7 @@
 ### Option 2: Local Development
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/bcastelino/ocr-text-vision-pro.git
 cd ocr-text-vision-pro
 
 # Install dependencies
