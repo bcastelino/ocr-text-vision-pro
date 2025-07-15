@@ -133,10 +133,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.header("💻 About This App")
-    st.markdown("This application provides various OCR and image understanding functionalities powered by the Llama 3.2 Vision model via the OpenRouter API.")
-    st.markdown("---")
-    st.header("👯‍♂️ Contributions & Feedback")
-    st.markdown("Report an issue? | Need a New Feature? <br> Want to suggest an improvement? <br>👉🏻[Open GitHub Repository](https://github.com/bcastelino/ocr-pro)", unsafe_allow_html=True)
+    st.markdown("This application provides various OCR and image understanding functionalities powered by the Llama 3.2 Vision model via the OpenRouter API. Feel free to suggest an improvement, Report an issue or bug, or Request a new Feature.")
     st.markdown("---")
     st.markdown("<div style='text-align: center;'>Made with ❤️ by Brian Castelino</div>", unsafe_allow_html=True)
     
