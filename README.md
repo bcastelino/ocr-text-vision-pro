@@ -125,13 +125,13 @@ docker run -p 8501:8501 ocr-text-vision-pro
 ## 🔐 Privacy & Security
 
 - API keys are stored only in session (not persisted)
-- No image data is stored on our servers
-- All processing happens through secure OpenRouter API
+- No image data is stored on my server
+- All processing happens through the secure OpenRouter API
 - Runs entirely in your browser session
 
 ## 🤝 Contributing
 
-We welcome contributions! Please feel free to submit issues and enhancement requests.
+Welcome contributors! Please feel free to submit issues and enhancement requests.
 
 ## 📄 License
 
