@@ -32,6 +32,46 @@
 - **Context Awareness**: Maintains conversation history
 - **Real-time Responses**: Instant AI-powered image analysis
 
+## 🔁 Workflow
+```mermaid
+flowchart TB
+ subgraph subGraph0["Streamlit App"]
+        UI["Presentation Layer (Streamlit UI)"]
+        PIL["Image Preprocessor (PIL)"]
+        APIClient["API Client (requests)"]
+        Session["Session Manager<br>(in-memory API key &amp; chat history)"]
+  end
+    Browser["User’s Web Browser"] -- UI event / upload image --> UI
+    UI -- image --> PIL
+    PIL -- processed image --> APIClient
+    UI -- store API key & history --> Session
+    Session -- provide API key --> APIClient
+    APIClient -- HTTP POST --> External["OpenRouter API<br>(Llama 3.2 Vision)"]
+    External -- JSON response --> APIClient
+    APIClient -- parsed results --> UI
+    Deployment["Deployment Environment<br>(Streamlit Cloud or Docker)"] -- hosts --> UI
+
+     UI:::frontend
+     PIL:::app
+     APIClient:::app
+     Session:::app
+     Browser:::frontend
+     External:::external
+     Deployment:::deployment
+    classDef frontend fill:#D6EAF8,stroke:#1B4F72
+    classDef app fill:#D5F5E3,stroke:#145A32
+    classDef external fill:#FAD7A0,stroke:#B9770E
+    classDef deployment fill:#E5E7E9,stroke:#566573
+    style Browser color:#000000
+    style External color:#000000
+    style Deployment color:#000000
+    click UI "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
+    click PIL "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
+    click APIClient "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
+    click Session "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
+
+```
+
 ## 🚀 Quick Start
 
 ### Option 1: Streamlit Community Cloud (Recommended)
