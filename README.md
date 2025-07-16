@@ -1,6 +1,7 @@
 <div align="center">
+<img src="https://cdn-icons-png.flaticon.com/512/5262/5262022.png" alt="OCR Text Vision Pro Icon" width="90"/>
 
-# OCR Text Vision Pro
+ # OCR Text Vision Pro
 
 > AI-powered OCR application using Llama 3.2 Vision for advanced image understanding and text extraction
 
