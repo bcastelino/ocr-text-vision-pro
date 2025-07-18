@@ -157,15 +157,19 @@ This project is open source and available under the [MIT License](LICENSE).
                      <a href="https://github.com/bcastelino" target="_blank" style="text-decoration: none;">
                      <img src="https://cdn-icons-png.flaticon.com/512/4494/4494756.png" alt="GitHub" width="30" height="30" style="width: 30px; height: 30px;">
                      </a>
+                   &nbsp; &nbsp; &nbsp;
                      <a href="https://linkedin.com/in/cas7elino" target="_blank" style="text-decoration: none;">
                      <img src="https://cdn-icons-png.flaticon.com/512/4494/4494498.png" alt="LinkedIn" width="30" height="30" style="width: 30px; height: 30px;">
                      </a>
+                   &nbsp; &nbsp; &nbsp;
                      <a href="https://twitter.com/cas7elino" target="_blank" style="text-decoration: none;">
                      <img src="https://cdn-icons-png.flaticon.com/512/4494/4494481.png" alt="Twitter" width="30" height="30" style="width: 30px; height: 30px;">
                      </a>
+                   &nbsp; &nbsp; &nbsp;
                      <a href="https://instagram.com/cas7elino" target="_blank" style="text-decoration: none;">
                      <img src="https://cdn-icons-png.flaticon.com/512/4494/4494489.png" alt="Instagram" width="30" height="30" style="width: 30px; height: 30px;">
                      </a>
+                   &nbsp; &nbsp; &nbsp;
                      <a href="https://brianc.framer.website/" target="_blank" style="text-decoration: none;">
                      <img src="https://cdn-icons-png.flaticon.com/512/4494/4494636.png" alt="Website" width="30" height="30" style="width: 30px; height: 30px;">
                      </a>
