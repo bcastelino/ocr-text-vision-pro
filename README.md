@@ -137,7 +137,7 @@ Welcome contributors! Please feel free to submit issues and enhancement requests
 
 This project is open source and available under the [MIT License](LICENSE).
 
-## 👤 Author
+## 🐱‍👤 Author
 
 <table>
    <tr>
@@ -153,7 +153,7 @@ This project is open source and available under the [MIT License](LICENSE).
                   <h1 style="font-size: 2em; margin-bottom: 5px; color: #333;">Brian Denis Castelino</h1>
                   <p style="font-size: 1.2em; color: #555; margin-bottom: 10px;">Data Analytics Engineer | AI Enthusiast</p>
                   <p style="font-size: 1em; color: #777; margin-bottom: 20px;">I turn vague ideas into clean, working systems, because someone’s got to 🤖</p>
-                  <div style="display: flex; justify-content: center; gap: 20px;">
+                  <div style="display: flex; justify-content: center; gap: 30px;">
                      <a href="https://github.com/bcastelino" target="_blank" style="text-decoration: none;">
                      <img src="https://cdn-icons-png.flaticon.com/512/4494/4494756.png" alt="GitHub" width="30" height="30" style="width: 30px; height: 30px;">
                      </a>
