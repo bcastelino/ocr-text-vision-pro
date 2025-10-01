@@ -17,7 +17,8 @@ st.set_page_config(
 # OpenRouter API Endpoint
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 # Model to use from OpenRouter. This is specified in the PRD.
-OPENROUTER_MODEL = "meta-llama/llama-3.2-11b-vision-instruct:free"
+#OPENROUTER_MODEL = "meta-llama/llama-3.2-11b-vision-instruct:free"
+OPENROUTER_MODEL = "x-ai/grok-4-fast:free"
 
 def _make_openrouter_call(api_key, messages, site_url="", site_name="OCR Text Vision Pro"):
     """
@@ -462,3 +463,4 @@ with tab4:
                     st.session_state.tab4_chat_history.append({"role": "assistant", "content": "Error: Could not get a response from the model."})
                     with st.chat_message("assistant"):
                         st.markdown("Error: Could not get a response from the model.")
+
