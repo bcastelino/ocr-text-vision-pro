@@ -16,9 +16,16 @@ st.set_page_config(
 # --- Global Variables and Helper Functions ---
 # OpenRouter API Endpoint
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-# Model to use from OpenRouter. This is specified in the PRD.
-#OPENROUTER_MODEL = "meta-llama/llama-3.2-11b-vision-instruct:free"
-OPENROUTER_MODEL = "x-ai/grok-4-fast:free"
+
+# Available free vision models on OpenRouter
+AVAILABLE_MODELS = {
+    "NVIDIA: Nemotron Nano 12B 2 VL (free)": "nvidia/nemotron-nano-12b-v2-vl:free",
+    "Google: Gemma 3 27B (free)": "google/gemma-3-27b-it:free",
+    "Mistral: Mistral Small 3.1 24B (free)": "mistralai/mistral-small-3.1-24b-instruct:free",
+}
+
+# Maximum number of API calls allowed using the built-in fallback key per session
+FALLBACK_API_MAX_USES = 5
 
 def _make_openrouter_call(api_key, messages, site_url="", site_name="OCR Text Vision Pro"):
     """
@@ -43,8 +50,10 @@ def _make_openrouter_call(api_key, messages, site_url="", site_name="OCR Text Vi
         "HTTP-Referer": site_url, # Optional. Site URL for rankings on openrouter.ai.
         "X-Title": "OCR Text Vision Pro", # Optional. Site title for rankings on openrouter.ai.
     }
+    selected = st.session_state.get("selected_model", list(AVAILABLE_MODELS)[0])
+    model_id = AVAILABLE_MODELS.get(selected, list(AVAILABLE_MODELS.values())[0])
     payload = json.dumps({
-        "model": OPENROUTER_MODEL,
+        "model": model_id,
         "messages": messages,
     })
 
@@ -59,6 +68,35 @@ def _make_openrouter_call(api_key, messages, site_url="", site_name="OCR Text Vi
     except json.JSONDecodeError:
         st.error("Failed to decode JSON response from API. The response might be malformed.")
         return None
+
+def _resolve_api_key():
+    """
+    Returns the API key to use for an OpenRouter call.
+    Priority: user-provided key > built-in fallback key (capped at FALLBACK_API_MAX_USES per session).
+    Shows appropriate error messages and returns None when no key is available.
+    """
+    # 1. User-provided key takes priority
+    user_key = st.session_state.get("openrouter_api_key", "").strip()
+    if user_key:
+        return user_key
+
+    # 2. Fallback developer key from Streamlit Secrets
+    uses = st.session_state.get("fallback_api_uses", 0)
+    if uses >= FALLBACK_API_MAX_USES:
+        st.error(
+            f"You have used all {FALLBACK_API_MAX_USES} free API calls for this session. "
+            "Please enter your own OpenRouter API key in the sidebar to continue."
+        )
+        return None
+
+    try:
+        fallback_key = st.secrets["OPENROUTER_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        st.error("No API key provided and no fallback key is configured. Please enter your OpenRouter API key in the sidebar.")
+        return None
+
+    st.session_state.fallback_api_uses = uses + 1
+    return fallback_key
 
 def _get_base64_image_data_url(uploaded_file):
     """
@@ -107,7 +145,7 @@ with col_title:
         '</h1>',
         unsafe_allow_html=True
     )
-    st.markdown('<p style="margin-top: -20px;">Leveraging Llama 3.2 Vision via OpenRouter for diverse image understanding and text extraction!</p>', unsafe_allow_html=True)
+    st.markdown('<p style="margin-top: -20px;">Powered by free vision models via OpenRouter for diverse image understanding and text extraction!</p>', unsafe_allow_html=True)
 
 with col_clear:
     st.markdown("<br>", unsafe_allow_html=True) # Add some space for alignment
@@ -116,9 +154,13 @@ with col_clear:
 
 st.markdown("---")
 
-# Initialize API key in session state if not present
+# Initialize session state defaults
 if 'openrouter_api_key' not in st.session_state:
     st.session_state.openrouter_api_key = ""
+if 'selected_model' not in st.session_state:
+    st.session_state.selected_model = list(AVAILABLE_MODELS)[0]
+if 'fallback_api_uses' not in st.session_state:
+    st.session_state.fallback_api_uses = 0
 
 with st.sidebar:
     st.markdown("<h1 style='text-align: left;'>⚙️ Configuration</h1>", unsafe_allow_html=True)
@@ -132,9 +174,28 @@ with st.sidebar:
     st.link_button("Need a Free API Key?", "https://openrouter.ai/settings/keys", help="Click to get your OpenRouter API key.")
     st.markdown("Your API key is stored in the session state and is not persisted.")
 
+    # Show fallback key usage info when user hasn't provided their own key
+    if not st.session_state.openrouter_api_key.strip():
+        remaining = FALLBACK_API_MAX_USES - st.session_state.fallback_api_uses
+        if remaining > 0:
+            st.info(f"🔑 No key entered — {remaining} free use(s) remaining this session.")
+        else:
+            st.warning(f"⚠️ All {FALLBACK_API_MAX_USES} free uses exhausted. Please enter your own API key.")
+
+    st.markdown("---")
+
+    # Model selector dropdown
+    st.session_state.selected_model = st.selectbox(
+        "Select Vision Model:",
+        options=list(AVAILABLE_MODELS.keys()),
+        index=list(AVAILABLE_MODELS.keys()).index(st.session_state.selected_model),
+        help="Choose which free vision model to use for OCR and image understanding.",
+    )
+    st.caption(f"Model ID: `{AVAILABLE_MODELS[st.session_state.selected_model]}`")
+
     st.markdown("---")
     st.header("💻 About This App")
-    st.markdown("This application provides various OCR and image understanding functionalities powered by the Llama 3.2 Vision model via the OpenRouter API. Feel free to suggest an improvement, Report an issue or bug, or Request a new Feature.")
+    st.markdown("This application provides various OCR and image understanding functionalities powered by free vision models via the OpenRouter API. Feel free to suggest an improvement, Report an issue or bug, or Request a new Feature.")
     st.markdown("---")
     st.markdown("<div style='text-align: center;'>Made with ❤️ by Brian Castelino</div>", unsafe_allow_html=True)
     
@@ -198,8 +259,9 @@ with tab1:
     st.session_state.tab1_content_type = content_type
 
     if st.button("Process Image 🚀", key="tab1_process_button"):
-        if not st.session_state.openrouter_api_key:
-            st.error("Please enter your OpenRouter API Key in the sidebar.")
+        api_key = _resolve_api_key()
+        if not api_key:
+            pass  # _resolve_api_key already showed the error
         elif st.session_state.tab1_uploaded_file is None:
             st.error("Please upload an image first.")
         else:
@@ -226,7 +288,7 @@ with tab1:
                     }
                 ]
 
-                response_json = _make_openrouter_call(st.session_state.openrouter_api_key, messages)
+                response_json = _make_openrouter_call(api_key, messages)
 
                 if response_json:
                     extracted_content = response_json['choices'][0]['message']['content']
@@ -275,8 +337,9 @@ with tab2:
     st.session_state.tab2_question = user_question_tab2
 
     if st.button("Extract/Answer 🔍", key="tab2_process_button"):
-        if not st.session_state.openrouter_api_key:
-            st.error("Please enter your OpenRouter API Key in the sidebar.")
+        api_key = _resolve_api_key()
+        if not api_key:
+            pass  # _resolve_api_key already showed the error
         elif st.session_state.tab2_uploaded_file is None:
             st.error("Please upload a document image first.")
         elif not st.session_state.tab2_question.strip():
@@ -296,7 +359,7 @@ with tab2:
                     }
                 ]
 
-                response_json = _make_openrouter_call(st.session_state.openrouter_api_key, messages)
+                response_json = _make_openrouter_call(api_key, messages)
 
                 if response_json:
                     extracted_content = response_json['choices'][0]['message']['content']
@@ -337,8 +400,9 @@ with tab3:
     st.session_state.tab3_question = user_question_tab3
 
     if st.button("Get Answer 🤔", key="tab3_process_button"):
-        if not st.session_state.openrouter_api_key:
-            st.error("Please enter your OpenRouter API Key in the sidebar.")
+        api_key = _resolve_api_key()
+        if not api_key:
+            pass  # _resolve_api_key already showed the error
         elif st.session_state.tab3_uploaded_file is None:
             st.error("Please upload an image first.")
         elif not st.session_state.tab3_question.strip():
@@ -358,7 +422,7 @@ with tab3:
                     }
                 ]
 
-                response_json = _make_openrouter_call(st.session_state.openrouter_api_key, messages)
+                response_json = _make_openrouter_call(api_key, messages)
 
                 if response_json:
                     answer_content = response_json['choices'][0]['message']['content']
@@ -373,7 +437,7 @@ with tab3:
 # --- Tab 4: Multi-modal Chat and Assistant-like Interactions ---
 with tab4:
     st.header("Multi-modal Chat Assistant")
-    st.markdown("Engage in a conversation with the AI about an image. The Llama 3.2-Vision model is optimized for assistant-like chat with images.")
+    st.markdown("Engage in a conversation with the AI about an image. The selected vision model is used for assistant-like chat with images.")
 
     # Session state for this tab
     if 'tab4_uploaded_file' not in st.session_state:
@@ -405,8 +469,9 @@ with tab4:
             st.markdown(message["content"])
 
     if user_prompt := st.chat_input("Type your message here..."):
-        if not st.session_state.openrouter_api_key:
-            st.error("Please enter your OpenRouter API Key in the sidebar.")
+        api_key = _resolve_api_key()
+        if not api_key:
+            pass  # _resolve_api_key already showed the error
         elif st.session_state.tab4_uploaded_file is None:
             st.error("Please upload an image to start the chat.")
         else:
@@ -452,7 +517,7 @@ with tab4:
                             api_messages.append({"role": msg["role"], "content": msg["content"]})
 
 
-                response_json = _make_openrouter_call(st.session_state.openrouter_api_key, api_messages)
+                response_json = _make_openrouter_call(api_key, api_messages)
 
                 if response_json:
                     assistant_response = response_json['choices'][0]['message']['content']

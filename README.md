@@ -3,12 +3,24 @@
 
  # OCR Text Vision Pro
 
-> AI-powered OCR application using Llama 3.2 Vision for advanced image understanding and text extraction
+> AI-powered OCR application leveraging free vision models via OpenRouter for advanced image understanding and text extraction
 
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python&logoColor=white)](https://python.org/)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-API-green?style=for-the-badge)](https://openrouter.ai/)
 </div>
+
+## 🤖 Available Models
+
+Select your preferred vision model from the sidebar dropdown. All models are free via OpenRouter:
+
+| Model | Model ID | Context | Strengths |
+|---|---|---|---|
+| **NVIDIA: Nemotron Nano 12B 2 VL** | `nvidia/nemotron-nano-12b-v2-vl:free` | 128K | #1 on OCRBench v2 — best for OCR, DocVQA, ChartQA |
+| **Google: Gemma 3 27B** | `google/gemma-3-27b-it:free` | 131K | General vision-language, multilingual (140+ langs) |
+| **Mistral: Mistral Small 3.1 24B** | `mistralai/mistral-small-3.1-24b-instruct:free` | 128K | Image analysis, reasoning, code, math, multilingual |
+
+> **Default**: NVIDIA Nemotron Nano 12B 2 VL is selected by default due to its purpose-built OCR capabilities.
 
 ## ✨ Features
 
@@ -35,6 +47,11 @@
 
 ## 🔁 Workflow
 ```mermaid
+---
+config:
+  layout: dagre
+  theme: mc
+---
 flowchart TB
  subgraph subGraph0["Streamlit App"]
         UI["Presentation Layer (Streamlit UI)"]
@@ -47,7 +64,7 @@ flowchart TB
     PIL -- processed image --> APIClient
     UI -- store API key & history --> Session
     Session -- provide API key --> APIClient
-    APIClient -- HTTP POST --> External["OpenRouter API<br>(Llama 3.2 Vision)"]
+    APIClient -- HTTP POST --> External["OpenRouter API<br>(Free Vision Models)"]
     External -- JSON response --> APIClient
     APIClient -- parsed results --> UI
     Deployment["Deployment Environment<br>(Streamlit Cloud or Docker)"] -- hosts --> UI
@@ -63,6 +80,10 @@ flowchart TB
     classDef app fill:#D5F5E3,stroke:#145A32
     classDef external fill:#FAD7A0,stroke:#B9770E
     classDef deployment fill:#E5E7E9,stroke:#566573
+    style UI color:#000000
+    style PIL color:#000000
+    style APIClient color:#000000
+    style Session color:#000000
     style Browser color:#000000
     style External color:#000000
     style Deployment color:#000000
@@ -76,9 +97,11 @@ flowchart TB
 ## 🚀 Quick Start
 
 ### Option 1: Streamlit Community Cloud (Recommended)
-1. **[Deploy directly](https://share.streamlit.io/)** - No setup required!
-2. Enter your [OpenRouter API key](https://openrouter.ai/settings/keys) (free)
-3. Start uploading images and extracting text!
+1. **[Deploy directly](https://share.streamlit.io/)** — No setup required!
+2. Optionally enter your [OpenRouter API key](https://openrouter.ai/settings/keys) in the sidebar (free to get)
+   - Without a key, you get **5 free API calls per session** using the built-in fallback key
+3. Select a vision model from the sidebar dropdown
+4. Start uploading images and extracting text!
 
 ### Option 2: Local Development
 ```bash
@@ -88,6 +111,10 @@ cd ocr-text-vision-pro
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Add your fallback developer API key (optional)
+# Edit .streamlit/secrets.toml and replace the placeholder:
+# OPENROUTER_API_KEY = "sk-or-v1-your-key-here"
 
 # Run the application
 streamlit run ocr_app.py
@@ -103,7 +130,7 @@ docker run -p 8501:8501 ocr-text-vision-pro
 ## 🔧 Tech Stack
 
 - **Frontend**: Streamlit (Python web framework)
-- **AI Model**: Llama 3.2-11B Vision (via OpenRouter API)
+- **AI Models**: NVIDIA Nemotron Nano 12B 2 VL, Google Gemma 3 27B, Mistral Small 3.1 24B (all free via OpenRouter)
 - **Image Processing**: PIL/Pillow
 - **HTTP Client**: Requests
 - **Deployment**: Streamlit Community Cloud
@@ -124,8 +151,10 @@ docker run -p 8501:8501 ocr-text-vision-pro
 
 ## 🔐 Privacy & Security
 
-- API keys are stored only in session (not persisted)
-- No image data is stored on my server
+- User-provided API keys are stored only in session state (never persisted to disk)
+- The built-in fallback key is stored in Streamlit Secrets and is never exposed to the client
+- Fallback key usage is capped at **5 calls per session** to prevent abuse
+- No image data is stored on the server — images are base64-encoded and sent directly to OpenRouter
 - All processing happens through the secure OpenRouter API
 - Runs entirely in your browser session
 
@@ -184,5 +213,5 @@ This project is open source and available under the [MIT License](LICENSE).
 ---
 
 <div align="center">
-Made with ❤️ using Streamlit and Llama 3.2 Vision
+Made with ❤️ using Streamlit and free vision models via OpenRouter
 </div>
