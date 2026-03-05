@@ -4,6 +4,8 @@ import base64
 import json
 from PIL import Image
 import io
+from datetime import datetime, timedelta
+import extra_streamlit_components as stx
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -19,13 +21,41 @@ OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Available free vision models on OpenRouter
 AVAILABLE_MODELS = {
-    "NVIDIA: Nemotron Nano 12B 2 VL (free)": "nvidia/nemotron-nano-12b-v2-vl:free",
-    "Google: Gemma 3 27B (free)": "google/gemma-3-27b-it:free",
-    "Mistral: Mistral Small 3.1 24B (free)": "mistralai/mistral-small-3.1-24b-instruct:free",
+    "NVIDIA: Nemotron Nano 12B 2 VL": "nvidia/nemotron-nano-12b-v2-vl:free",
+    "Google: Gemma 3 27B": "google/gemma-3-27b-it:free",
+    "Mistral: Mistral Small 3.1 24B": "mistralai/mistral-small-3.1-24b-instruct:free",
 }
 
 # Maximum number of API calls allowed using the built-in fallback key per session
 FALLBACK_API_MAX_USES = 5
+FALLBACK_API_COOKIE_KEY = "ocr_fallback_api_uses"
+FALLBACK_API_COOKIE_EXPIRES_DAYS = 30
+
+cookie_manager = stx.CookieManager()
+
+def _read_fallback_uses_from_cookie():
+    """Read the persisted fallback-use count from a browser cookie."""
+    cookie_value = cookie_manager.get(cookie=FALLBACK_API_COOKIE_KEY)
+    if cookie_value is None:
+        return None
+    try:
+        uses = int(cookie_value)
+    except (TypeError, ValueError):
+        return None
+    return max(0, min(FALLBACK_API_MAX_USES, uses))
+
+def _set_fallback_api_uses(uses):
+    """Persist the fallback-use count to both session state and a browser cookie."""
+    try:
+        clamped_uses = max(0, min(FALLBACK_API_MAX_USES, int(uses)))
+    except (TypeError, ValueError):
+        clamped_uses = 0
+    st.session_state.fallback_api_uses = clamped_uses
+    cookie_manager.set(
+        FALLBACK_API_COOKIE_KEY,
+        str(clamped_uses),
+        expires_at=datetime.now() + timedelta(days=FALLBACK_API_COOKIE_EXPIRES_DAYS),
+    )
 
 def _make_openrouter_call(api_key, messages, site_url="", site_name="OCR Text Vision Pro"):
     """
@@ -95,7 +125,7 @@ def _resolve_api_key():
         st.error("No API key provided and no fallback key is configured. Please enter your OpenRouter API key in the sidebar.")
         return None
 
-    st.session_state.fallback_api_uses = uses + 1
+    _set_fallback_api_uses(uses + 1)
     return fallback_key
 
 def _get_base64_image_data_url(uploaded_file):
@@ -157,10 +187,11 @@ st.markdown("---")
 # Initialize session state defaults
 if 'openrouter_api_key' not in st.session_state:
     st.session_state.openrouter_api_key = ""
-if 'selected_model' not in st.session_state:
+if 'selected_model' not in st.session_state or st.session_state.selected_model not in AVAILABLE_MODELS:
     st.session_state.selected_model = list(AVAILABLE_MODELS)[0]
 if 'fallback_api_uses' not in st.session_state:
-    st.session_state.fallback_api_uses = 0
+    cookie_uses = _read_fallback_uses_from_cookie()
+    st.session_state.fallback_api_uses = cookie_uses if cookie_uses is not None else 0
 
 with st.sidebar:
     st.markdown("<h1 style='text-align: left;'>⚙️ Configuration</h1>", unsafe_allow_html=True)
@@ -176,7 +207,7 @@ with st.sidebar:
 
     # Show fallback key usage info when user hasn't provided their own key
     if not st.session_state.openrouter_api_key.strip():
-        remaining = FALLBACK_API_MAX_USES - st.session_state.fallback_api_uses
+        remaining = max(0, FALLBACK_API_MAX_USES - st.session_state.fallback_api_uses)
         if remaining > 0:
             st.info(f"🔑 No key entered — {remaining} free use(s) remaining this session.")
         else:
