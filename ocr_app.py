@@ -4,8 +4,7 @@ import base64
 import json
 from PIL import Image
 import io
-from datetime import datetime, timedelta
-import extra_streamlit_components as stx
+from streamlit_cookies_controller import CookieController
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -31,11 +30,11 @@ FALLBACK_API_MAX_USES = 5
 FALLBACK_API_COOKIE_KEY = "ocr_fallback_api_uses"
 FALLBACK_API_COOKIE_EXPIRES_DAYS = 30
 
-cookie_manager = stx.CookieManager()
+cookie_manager = CookieController()
 
 def _read_fallback_uses_from_cookie():
     """Read the persisted fallback-use count from a browser cookie."""
-    cookie_value = cookie_manager.get(cookie=FALLBACK_API_COOKIE_KEY)
+    cookie_value = cookie_manager.get(FALLBACK_API_COOKIE_KEY)
     if cookie_value is None:
         return None
     try:
@@ -54,7 +53,7 @@ def _set_fallback_api_uses(uses):
     cookie_manager.set(
         FALLBACK_API_COOKIE_KEY,
         str(clamped_uses),
-        expires_at=datetime.now() + timedelta(days=FALLBACK_API_COOKIE_EXPIRES_DAYS),
+        max_age=FALLBACK_API_COOKIE_EXPIRES_DAYS * 24 * 3600,
     )
 
 def _make_openrouter_call(api_key, messages, site_url="", site_name="OCR Text Vision Pro"):
