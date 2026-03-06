@@ -2,8 +2,10 @@ import streamlit as st
 import requests
 import base64
 import json
+import re
 from PIL import Image
 import io
+import fitz  # PyMuPDF
 from streamlit_cookies_controller import CookieController
 
 # --- Page Configuration ---
@@ -13,6 +15,50 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# --- Responsive CSS ---
+st.markdown("""
+<style>
+/* Mobile (≤768px) */
+@media (max-width: 768px) {
+    [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+    }
+    [data-testid="stColumn"] {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+    }
+    .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    h1 { font-size: 1.4rem !important; }
+    h2 { font-size: 1.2rem !important; }
+    h3 { font-size: 1.05rem !important; }
+    h1 img { width: 28px !important; }
+    button[role="tab"] {
+        font-size: 0.75rem !important;
+        padding: 0.4rem 0.6rem !important;
+    }
+    [data-testid="stSidebar"] {
+        min-width: 0 !important;
+        width: 260px !important;
+    }
+}
+/* Tablet (769–1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .block-container {
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+    }
+    h1 { font-size: 1.6rem !important; }
+    button[role="tab"] {
+        font-size: 0.85rem !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 
 # --- Global Variables and Helper Functions ---
 # OpenRouter API Endpoint
@@ -143,6 +189,56 @@ def _get_base64_image_data_url(uploaded_file):
     base64_image = base64.b64encode(image_bytes).decode('utf-8')
     return f"data:{uploaded_file.type};base64,{base64_image}"
 
+def _parse_page_selection(selection_str, total_pages):
+    """
+    Parse a comma-separated page selection string like '1-5, 8, 12, 34' into
+    a sorted list of 0-based page indices. Returns (list, error_msg).
+    """
+    if not selection_str or not selection_str.strip():
+        return [], "Please enter at least one page number."
+    pages = set()
+    for part in selection_str.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        range_match = re.match(r"^(\d+)\s*-\s*(\d+)$", part)
+        if range_match:
+            start, end = int(range_match.group(1)), int(range_match.group(2))
+            if start < 1 or end < 1:
+                return [], f"Page numbers must be positive (got '{part}')."
+            if start > end:
+                return [], f"Invalid range '{part}' — start must be ≤ end."
+            if end > total_pages:
+                return [], f"Page {end} exceeds the PDF's {total_pages} page(s)."
+            pages.update(range(start, end + 1))
+        elif re.match(r"^\d+$", part):
+            p = int(part)
+            if p < 1:
+                return [], "Page numbers must be positive."
+            if p > total_pages:
+                return [], f"Page {p} exceeds the PDF's {total_pages} page(s)."
+            pages.add(p)
+        else:
+            return [], f"Invalid entry '{part}'. Use numbers or ranges like '1-5'."
+    sorted_pages = sorted(pages)
+    indices = [p - 1 for p in sorted_pages]  # convert to 0-based
+    return indices, None
+
+def _pdf_pages_to_data_urls(pdf_bytes, page_indices):
+    """
+    Convert specific pages of a PDF to base64 PNG data URLs.
+    """
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    data_urls = []
+    for idx in page_indices:
+        page = doc.load_page(idx)
+        pix = page.get_pixmap(dpi=150)
+        png_bytes = pix.tobytes("png")
+        b64 = base64.b64encode(png_bytes).decode("utf-8")
+        data_urls.append(f"data:image/png;base64,{b64}")
+    doc.close()
+    return data_urls
+
 def _clear_all_results():
     """
     Resets all session state variables related to inputs and outputs across all tabs.
@@ -151,17 +247,23 @@ def _clear_all_results():
     st.session_state.tab1_uploaded_file = None
     st.session_state.tab1_content_type = "General Text Extraction"
     st.session_state.tab1_ocr_result = None
-    # Tab 2
+    # Tab 2 (Ask, Analyze & Chat)
     st.session_state.tab2_uploaded_file = None
+    st.session_state.tab2_mode = "One-time Answer"
+    st.session_state.tab2_analysis_scope = "Document Intelligence"
     st.session_state.tab2_question = ""
     st.session_state.tab2_result = None
-    # Tab 3
+    st.session_state.tab2_chat_history = []
+    st.session_state.tab2_image_signature = None
+    # Tab 3 (PDF Scan & Extract)
     st.session_state.tab3_uploaded_file = None
-    st.session_state.tab3_question = ""
+    st.session_state.tab3_content_type = "General Text Extraction"
+    st.session_state.tab3_page_mode = "All Pages"
+    st.session_state.tab3_page_selection = ""
     st.session_state.tab3_result = None
-    # Tab 4
-    st.session_state.tab4_uploaded_file = None
-    st.session_state.tab4_chat_history = []
+    for legacy_key in ["tab4_uploaded_file", "tab4_chat_history"]:
+        if legacy_key in st.session_state:
+            del st.session_state[legacy_key]
     st.rerun() # Rerun to clear inputs and outputs on the UI
 
 # --- Title and Global Sidebar Content ---
@@ -252,15 +354,10 @@ with st.sidebar:
 
 
 # --- Main Application Tabs ---
-st.subheader("Select an Optical Character Recognition (OCR) Functionality:") # New heading for tabs
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📈 General OCR & Content Recognition",
-    "📑 Advanced Document Intelligence",
-    "❓ Intelligent Visual Question Answering",
-    "🗣️ Multi-modal Chat Assistant"
-])
+st.subheader("Select an Optical Character Recognition (OCR) Functionality:")
+tab1, tab2, tab3 = st.tabs(["📈 Extract & Convert", "🎯 Ask, Analyze & Chat", "📑 PDF Scan & Extract"])
 
-# --- Tab 1: General OCR & Content Recognition (Home Page) ---
+# --- Tab 1: Extract & Convert ---
 with tab1:
     st.header("General OCR & Content Recognition")
     st.markdown("Upload an image and select the type of content you want to extract or describe.")
@@ -338,224 +435,262 @@ with tab1:
         else:
             st.markdown(st.session_state.tab1_ocr_result)
 
-# --- Tab 2: Advanced Document Intelligence ---
+# --- Tab 2: Ask, Analyze & Chat ---
 with tab2:
-    st.header("Advanced Document Intelligence")
-    st.markdown("Upload a document image to extract structured information or ask specific questions about its content and layout. This leverages the model's DocVQA capabilities.")
+    st.header("Ask, Analyze & Chat")
+    st.markdown("Upload an image and interact with the AI — ask a one-time question, extract document data, or hold a multi-turn conversation.")
 
     # Session state for this tab
     if 'tab2_uploaded_file' not in st.session_state:
         st.session_state.tab2_uploaded_file = None
+    if 'tab2_mode' not in st.session_state:
+        st.session_state.tab2_mode = "One-time Answer"
+    if 'tab2_analysis_scope' not in st.session_state:
+        st.session_state.tab2_analysis_scope = "Document Intelligence"
     if 'tab2_question' not in st.session_state:
         st.session_state.tab2_question = ""
     if 'tab2_result' not in st.session_state:
         st.session_state.tab2_result = None
+    if 'tab2_chat_history' not in st.session_state:
+        st.session_state.tab2_chat_history = []
+    if 'tab2_image_signature' not in st.session_state:
+        st.session_state.tab2_image_signature = None
 
-    uploaded_file_tab2 = st.file_uploader("Choose a document image...", type=['png', 'jpg', 'jpeg'], key="tab2_uploader")
+    uploaded_file_tab2 = st.file_uploader("Choose an image...", type=['png', 'jpg', 'jpeg'], key="tab2_uploader")
     if uploaded_file_tab2:
         st.session_state.tab2_uploaded_file = uploaded_file_tab2
-        # Display image in a smaller, responsive column
-        col_img2, _ = st.columns([0.4, 0.6]) # Allocate 40% of the width to the image column
+        new_sig = f"{uploaded_file_tab2.name}:{uploaded_file_tab2.size}:{uploaded_file_tab2.type}"
+        if new_sig != st.session_state.tab2_image_signature:
+            st.session_state.tab2_image_signature = new_sig
+            st.session_state.tab2_chat_history = []
+            st.session_state.tab2_result = None
+        col_img2, _ = st.columns([0.4, 0.6])
         with col_img2:
-            st.image(uploaded_file_tab2, caption="Uploaded Document", use_container_width=True)
+            st.image(uploaded_file_tab2, caption="Uploaded Image", use_container_width=True)
 
-    user_question_tab2 = st.text_area(
-        "Ask a question or specify extraction (e.g., 'Extract invoice number and total amount', 'What is the date on this contract?'):",
-        value=st.session_state.tab2_question,
-        key="tab2_question_input"
+    interaction_mode = st.radio(
+        "Interaction Mode:",
+        ("One-time Answer", "Chat Session"),
+        key="tab2_mode_radio",
+        horizontal=True,
     )
-    st.session_state.tab2_question = user_question_tab2
+    st.session_state.tab2_mode = interaction_mode
 
-    if st.button("Extract/Answer 🔍", key="tab2_process_button"):
-        api_key = _resolve_api_key()
-        if not api_key:
-            pass  # _resolve_api_key already showed the error
-        elif st.session_state.tab2_uploaded_file is None:
-            st.error("Please upload a document image first.")
-        elif not st.session_state.tab2_question.strip():
-            st.error("Please enter a question or extraction request.")
+    if interaction_mode == "One-time Answer":
+        analysis_scope = st.radio(
+            "Analysis Scope:",
+            ("Document Intelligence", "Visual Question Answering"),
+            key="tab2_scope_radio",
+            horizontal=True,
+        )
+        st.session_state.tab2_analysis_scope = analysis_scope
+
+        if analysis_scope == "Document Intelligence":
+            placeholder = "e.g., 'Extract invoice number and total amount', 'What is the date on this contract?'"
         else:
-            with st.spinner("Processing document..."):
-                image_data_url = _get_base64_image_data_url(st.session_state.tab2_uploaded_file)
-                prompt_text = f"Analyze the provided document image and respond to the following request: {st.session_state.tab2_question}. Present the answer in a clear, structured Markdown format."
+            placeholder = "e.g., 'What is the main subject?', 'Describe the scene'"
 
-                messages = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt_text},
-                            {"type": "image_url", "image_url": {"url": image_data_url}}
-                        ]
-                    }
-                ]
+        user_question = st.text_area(
+            "Enter your question or extraction request:",
+            value=st.session_state.tab2_question,
+            placeholder=placeholder,
+            key="tab2_question_input",
+        )
+        st.session_state.tab2_question = user_question
 
-                response_json = _make_openrouter_call(api_key, messages)
+        btn_label = "Extract / Answer 🔍" if analysis_scope == "Document Intelligence" else "Get Answer 🤔"
+        if st.button(btn_label, key="tab2_process_button"):
+            api_key = _resolve_api_key()
+            if not api_key:
+                pass
+            elif st.session_state.tab2_uploaded_file is None:
+                st.error("Please upload an image first.")
+            elif not st.session_state.tab2_question.strip():
+                st.error("Please enter a question or extraction request.")
+            else:
+                with st.spinner("Processing..."):
+                    image_data_url = _get_base64_image_data_url(st.session_state.tab2_uploaded_file)
+                    if analysis_scope == "Document Intelligence":
+                        prompt_text = f"Analyze the provided document image and respond to the following request: {st.session_state.tab2_question}. Present the answer in a clear, structured Markdown format."
+                    else:
+                        prompt_text = f"Based on the provided image, answer the following question: {st.session_state.tab2_question}"
 
-                if response_json:
-                    extracted_content = response_json['choices'][0]['message']['content']
-                    st.session_state.tab2_result = extracted_content
-                else:
-                    st.session_state.tab2_result = "Error: Could not get a response from the model."
+                    messages = [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt_text},
+                                {"type": "image_url", "image_url": {"url": image_data_url}},
+                            ],
+                        }
+                    ]
+                    response_json = _make_openrouter_call(api_key, messages)
+                    if response_json:
+                        st.session_state.tab2_result = response_json['choices'][0]['message']['content']
+                    else:
+                        st.session_state.tab2_result = "Error: Could not get a response from the model."
 
-    if st.session_state.tab2_result:
-        st.markdown("### Result:")
-        st.markdown(st.session_state.tab2_result)
+        if st.session_state.tab2_result:
+            st.markdown("### Result:")
+            st.markdown(st.session_state.tab2_result)
 
-# --- Tab 3: Intelligent Visual Question Answering (VQA) ---
-with tab3:
-    st.header("Intelligent Visual Question Answering")
-    st.markdown("Upload any image and ask a general question about its content. This uses the model's Visual Question Answering (VQA) and Visual Reasoning capabilities.")
+    else:  # Chat Session
+        for message in st.session_state.tab2_chat_history:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-    # Session state for this tab
-    if 'tab3_uploaded_file' not in st.session_state:
-        st.session_state.tab3_uploaded_file = None
-    if 'tab3_question' not in st.session_state:
-        st.session_state.tab3_question = ""
-    if 'tab3_result' not in st.session_state:
-        st.session_state.tab3_result = None
+        if user_prompt := st.chat_input("Type your message here..."):
+            api_key = _resolve_api_key()
+            if not api_key:
+                pass
+            elif st.session_state.tab2_uploaded_file is None:
+                st.error("Please upload an image to start the chat.")
+            else:
+                with st.spinner("Thinking..."):
+                    image_data_url = _get_base64_image_data_url(st.session_state.tab2_uploaded_file)
 
-    uploaded_file_tab3 = st.file_uploader("Choose an image...", type=['png', 'jpg', 'jpeg'], key="tab3_uploader")
-    if uploaded_file_tab3:
-        st.session_state.tab3_uploaded_file = uploaded_file_tab3
-        # Display image in a smaller, responsive column
-        col_img3, _ = st.columns([0.4, 0.6]) # Allocate 40% of the width to the image column
-        with col_img3:
-            st.image(uploaded_file_tab3, caption="Uploaded Image", use_container_width=True)
+                    st.session_state.tab2_chat_history.append({"role": "user", "content": user_prompt})
 
-    user_question_tab3 = st.text_input(
-        "Ask your question about the image (e.g., 'What is the main subject?', 'Describe the scene'):",
-        value=st.session_state.tab3_question,
-        key="tab3_question_input"
-    )
-    st.session_state.tab3_question = user_question_tab3
-
-    if st.button("Get Answer 🤔", key="tab3_process_button"):
-        api_key = _resolve_api_key()
-        if not api_key:
-            pass  # _resolve_api_key already showed the error
-        elif st.session_state.tab3_uploaded_file is None:
-            st.error("Please upload an image first.")
-        elif not st.session_state.tab3_question.strip():
-            st.error("Please enter a question.")
-        else:
-            with st.spinner("Getting answer..."):
-                image_data_url = _get_base64_image_data_url(st.session_state.tab3_uploaded_file)
-                prompt_text = f"Based on the provided image, answer the following question: {st.session_state.tab3_question}"
-
-                messages = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt_text},
-                            {"type": "image_url", "image_url": {"url": image_data_url}}
-                        ]
-                    }
-                ]
-
-                response_json = _make_openrouter_call(api_key, messages)
-
-                if response_json:
-                    answer_content = response_json['choices'][0]['message']['content']
-                    st.session_state.tab3_result = answer_content
-                else:
-                    st.session_state.tab3_result = "Error: Could not get a response from the model."
-
-    if st.session_state.tab3_result:
-        st.markdown("### Answer:")
-        st.markdown(st.session_state.tab3_result)
-
-# --- Tab 4: Multi-modal Chat and Assistant-like Interactions ---
-with tab4:
-    st.header("Multi-modal Chat Assistant")
-    st.markdown("Engage in a conversation with the AI about an image. The selected vision model is used for assistant-like chat with images.")
-
-    # Session state for this tab
-    if 'tab4_uploaded_file' not in st.session_state:
-        st.session_state.tab4_uploaded_file = None
-    if 'tab4_chat_history' not in st.session_state:
-        st.session_state.tab4_chat_history = [] # Stores {"role": "user/assistant", "content": "message"}
-
-    uploaded_file_tab4 = st.file_uploader("Upload an image to start the conversation...", type=['png', 'jpg', 'jpeg'], key="tab4_uploader")
-
-    if uploaded_file_tab4 and st.session_state.tab4_uploaded_file != uploaded_file_tab4:
-        st.session_state.tab4_uploaded_file = uploaded_file_tab4
-        st.session_state.tab4_chat_history = [] # Clear chat history on new image upload
-        # Display image in a smaller, responsive column
-        col_img4, _ = st.columns([0.4, 0.6]) # Allocate 40% of the width to the image column
-        with col_img4:
-            st.image(uploaded_file_tab4, caption="Image for Chat", use_container_width=True)
-        # Initial message from assistant
-        st.session_state.tab4_chat_history.append({"role": "assistant", "content": "Hello! Upload an image and ask me anything about it."})
-        st.rerun() # Rerun to display the initial message
-
-    # Display chat messages
-    if st.session_state.tab4_uploaded_file:
-        col_img4_display, _ = st.columns([0.4, 0.6]) # Allocate 40% of the width for the displayed image
-        with col_img4_display:
-            st.image(st.session_state.tab4_uploaded_file, caption="Current Image for Chat", use_container_width=True)
-
-    for message in st.session_state.tab4_chat_history:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    if user_prompt := st.chat_input("Type your message here..."):
-        api_key = _resolve_api_key()
-        if not api_key:
-            pass  # _resolve_api_key already showed the error
-        elif st.session_state.tab4_uploaded_file is None:
-            st.error("Please upload an image to start the chat.")
-        else:
-            with st.spinner("Thinking..."):
-                image_data_url = _get_base64_image_data_url(st.session_state.tab4_uploaded_file)
-
-                # Construct messages for OpenRouter, including the image context only once
-                api_messages = []
-                # Add the image to the first user message
-                # Check if chat history is not empty and if the first message is from assistant
-                # If it's the very first user message after image upload, the assistant's initial greeting is already there.
-                # The image should be associated with the first *user* message in the API call, not the assistant's greeting.
-                # So, if the history is just the assistant's greeting, the current user_prompt is the first actual user input.
-                if len(st.session_state.tab4_chat_history) == 1 and st.session_state.tab4_chat_history[0]["role"] == "assistant":
-                    # This is the first user prompt after the initial assistant greeting
-                    api_messages.append({
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": user_prompt}, # Use the current user_prompt
-                            {"type": "image_url", "image_url": {"url": image_data_url}}
-                        ]
-                    })
-                else:
-                    # For subsequent messages or if the chat history started differently,
-                    # reconstruct the history for the API call.
-                    # The image should ideally be with the first user message that references it.
-                    # Given the current flow, we'll attach it to the first user message in the API call.
-                    # This assumes the user always uploads an image before starting a relevant conversation.
-
-                    # Find the first user message in the history and attach the image there
-                    first_user_message_found = False
-                    for msg in st.session_state.tab4_chat_history:
-                        if msg["role"] == "user" and not first_user_message_found:
+                    # Build API messages — attach image to the first user message
+                    api_messages = []
+                    first_user_done = False
+                    for msg in st.session_state.tab2_chat_history:
+                        if msg["role"] == "user" and not first_user_done:
                             api_messages.append({
                                 "role": "user",
                                 "content": [
                                     {"type": "text", "text": msg["content"]},
-                                    {"type": "image_url", "image_url": {"url": image_data_url}}
-                                ]
+                                    {"type": "image_url", "image_url": {"url": image_data_url}},
+                                ],
                             })
-                            first_user_message_found = True
+                            first_user_done = True
                         else:
                             api_messages.append({"role": msg["role"], "content": msg["content"]})
 
+                    response_json = _make_openrouter_call(api_key, api_messages)
+                    if response_json:
+                        assistant_response = response_json['choices'][0]['message']['content']
+                    else:
+                        assistant_response = "Error: Could not get a response from the model."
 
-                response_json = _make_openrouter_call(api_key, api_messages)
-
-                if response_json:
-                    assistant_response = response_json['choices'][0]['message']['content']
-                    st.session_state.tab4_chat_history.append({"role": "assistant", "content": assistant_response})
+                    st.session_state.tab2_chat_history.append({"role": "assistant", "content": assistant_response})
+                    with st.chat_message("user"):
+                        st.markdown(user_prompt)
                     with st.chat_message("assistant"):
                         st.markdown(assistant_response)
+
+# --- Tab 3: PDF Scan & Extract ---
+with tab3:
+    st.header("PDF Scan & Extract")
+    st.markdown("Upload a PDF file to extract text, equations, code, or descriptions from its pages using vision AI.")
+
+    # Session state for this tab
+    if 'tab3_uploaded_file' not in st.session_state:
+        st.session_state.tab3_uploaded_file = None
+    if 'tab3_content_type' not in st.session_state:
+        st.session_state.tab3_content_type = "General Text Extraction"
+    if 'tab3_page_mode' not in st.session_state:
+        st.session_state.tab3_page_mode = "All Pages"
+    if 'tab3_page_selection' not in st.session_state:
+        st.session_state.tab3_page_selection = ""
+    if 'tab3_result' not in st.session_state:
+        st.session_state.tab3_result = None
+
+    uploaded_pdf = st.file_uploader("Choose a PDF file...", type=['pdf'], key="tab3_uploader")
+    if uploaded_pdf:
+        st.session_state.tab3_uploaded_file = uploaded_pdf
+        pdf_bytes = uploaded_pdf.getvalue()
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        total_pages = doc.page_count
+        doc.close()
+        st.info(f"📄 PDF loaded: **{total_pages}** page(s)")
+
+        page_mode = st.radio(
+            "Pages to scan:",
+            ("All Pages", "Select Specific Pages"),
+            key="tab3_page_mode_radio",
+            horizontal=True,
+        )
+        st.session_state.tab3_page_mode = page_mode
+
+        if page_mode == "Select Specific Pages":
+            page_sel = st.text_input(
+                "Enter page numbers (e.g. 1-5, 8, 12, 34):",
+                value=st.session_state.tab3_page_selection,
+                key="tab3_page_selection_input",
+            )
+            st.session_state.tab3_page_selection = page_sel
+
+    content_type_pdf = st.radio(
+        "Select Content Type:",
+        ("General Text Extraction", "LaTeX Equation Conversion", "Code Snippet Extraction", "Chart/Diagram Description"),
+        key="tab3_content_type_radio",
+    )
+    st.session_state.tab3_content_type = content_type_pdf
+
+    if st.button("Scan PDF 🔍", key="tab3_process_button"):
+        api_key = _resolve_api_key()
+        if not api_key:
+            pass
+        elif st.session_state.tab3_uploaded_file is None:
+            st.error("Please upload a PDF file first.")
+        else:
+            pdf_bytes = st.session_state.tab3_uploaded_file.getvalue()
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            total_pages = doc.page_count
+            doc.close()
+
+            # Determine which pages to process
+            if st.session_state.tab3_page_mode == "All Pages":
+                page_indices = list(range(total_pages))
+            else:
+                page_indices, parse_error = _parse_page_selection(
+                    st.session_state.tab3_page_selection, total_pages
+                )
+                if parse_error:
+                    st.error(parse_error)
+                    st.stop()
+
+            if len(page_indices) > 15:
+                st.warning(
+                    f"⚠️ You selected {len(page_indices)} pages. Processing many pages at once "
+                    "may affect response quality with free-tier models."
+                )
+
+            with st.spinner(f"Scanning {len(page_indices)} page(s)..."):
+                data_urls = _pdf_pages_to_data_urls(pdf_bytes, page_indices)
+
+                prompt_text = ""
+                if st.session_state.tab3_content_type == "General Text Extraction":
+                    prompt_text = """Analyze ALL the provided PDF page images. Extract all readable text from every page and present it in a structured Markdown format that is clear, concise, and well-organized. Ensure proper formatting (e.g., headings, lists, or code blocks) as necessary. Clearly indicate page boundaries."""
+                elif st.session_state.tab3_content_type == "LaTeX Equation Conversion":
+                    prompt_text = """Examine ALL the provided PDF page images. Extract every mathematical equation and output the corresponding LaTeX code. NEVER include any additional text or explanations. DON'T add dollar signs ($) around the LaTeX code. DO NOT extract simplified versions of the equations. NEVER add documentclass, packages or begindocument. Output only the LaTeX code."""
+                elif st.session_state.tab3_content_type == "Code Snippet Extraction":
+                    prompt_text = """Examine ALL the provided PDF page images. Extract all code from every page. Present the code in formatted code blocks suitable for direct use. Do not include any additional text or explanations."""
+                elif st.session_state.tab3_content_type == "Chart/Diagram Description":
+                    prompt_text = """Examine ALL the provided PDF page images. Describe every chart or diagram found across the pages. Explain key elements, data, and any trends or insights in a clear, concise manner. Indicate which page each chart appears on."""
+
+                content_parts: list[dict] = [{"type": "text", "text": prompt_text}]
+                for url in data_urls:
+                    content_parts.append({"type": "image_url", "image_url": {"url": url}})
+
+                messages = [{"role": "user", "content": content_parts}]
+                response_json = _make_openrouter_call(api_key, messages)
+
+                if response_json:
+                    st.session_state.tab3_result = response_json['choices'][0]['message']['content']
                 else:
-                    st.session_state.tab4_chat_history.append({"role": "assistant", "content": "Error: Could not get a response from the model."})
-                    with st.chat_message("assistant"):
-                        st.markdown("Error: Could not get a response from the model.")
+                    st.session_state.tab3_result = "Error: Could not get a response from the model."
+
+    if st.session_state.tab3_result:
+        st.markdown("### Result:")
+        if st.session_state.tab3_content_type == "LaTeX Equation Conversion":
+            st.code(st.session_state.tab3_result, language='latex')
+            st.markdown("#### Rendered LaTeX:")
+            cleaned_latex = st.session_state.tab3_result.replace(r"\[", "").replace(r"\]", "")
+            st.latex(cleaned_latex)
+        elif st.session_state.tab3_content_type == "Code Snippet Extraction":
+            st.code(st.session_state.tab3_result, language='python')
+        else:
+            st.markdown(st.session_state.tab3_result)
 
