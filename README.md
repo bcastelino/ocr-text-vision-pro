@@ -24,26 +24,27 @@ Select your preferred vision model from the sidebar dropdown. All models are fre
 
 ## ✨ Features
 
-### 📈 General OCR & Content Recognition
+### 📈 Extract & Convert
 - **Text Extraction**: Extract readable content from any image
 - **LaTeX Conversion**: Convert mathematical equations to LaTeX code with live rendering
 - **Code Extraction**: Extract and format code snippets from screenshots
 - **Chart Analysis**: Describe charts, diagrams, and visual data
 
-### 📑 Advanced Document Intelligence
-- **Document VQA**: Ask specific questions about document content
-- **Structured Extraction**: Extract invoice numbers, dates, amounts, etc.
-- **Form Processing**: Handle contracts, receipts, and business documents
+### 🎯 Ask, Analyze & Chat
+- **One-time Answer Mode**: Ask a direct question on an uploaded image
+- **Document Intelligence Scope**: Extract invoice numbers, dates, totals, and structured document fields
+- **Visual Question Answering Scope**: Reason about scenes, objects, and image context
+- **Chat Session Mode**: Multi-turn conversation over the same uploaded image with history
 
-### ❓ Intelligent Visual Question Answering
-- **Scene Understanding**: Analyze and describe image content
-- **Object Recognition**: Identify and reason about objects in images
-- **Visual Reasoning**: Answer complex questions about visual content
+### 📑 PDF Scan & Extract
+- **Native PDF Upload**: Upload PDF files directly
+- **Flexible Page Selection**: Scan all pages or specific pages/ranges like `1-5, 8, 12, 34`
+- **Multi-page Vision Parsing**: Converts selected pages to images and sends them in one request
+- **Shared Extraction Modes**: Text, LaTeX, Code, and Chart/Diagram extraction from PDF pages
 
-### 🗣️ Multi-modal Chat Assistant
-- **Interactive Conversations**: Chat with AI about uploaded images
-- **Context Awareness**: Maintains conversation history
-- **Real-time Responses**: Instant AI-powered image analysis
+### 📱 Responsive Experience
+- **Mobile, Tablet, Desktop Adaptation**: Layout and spacing optimized with breakpoints
+- **Adaptive Tabs and Typography**: Better readability and navigation across screen sizes
 
 ## 🔁 Workflow
 ```mermaid
@@ -55,15 +56,21 @@ config:
 flowchart TB
  subgraph subGraph0["Streamlit App"]
         UI["Presentation Layer (Streamlit UI)"]
-        PIL["Image Preprocessor (PIL)"]
+            PIL["Image Preprocessor (PIL)"]
+            PDF["PDF Renderer (PyMuPDF)"]
         APIClient["API Client (requests)"]
-        Session["Session Manager<br>(in-memory API key &amp; chat history)"]
+            Session["Session Manager<br>(API key, chat history, selected model)"]
+            Cookies["Cookie Manager<br>(fallback usage persistence)"]
   end
     Browser["User’s Web Browser"] -- UI event / upload image --> UI
+      Browser -- upload PDF --> UI
     UI -- image --> PIL
+      UI -- PDF bytes --> PDF
+      PDF -- selected pages as images --> APIClient
     PIL -- processed image --> APIClient
     UI -- store API key & history --> Session
     Session -- provide API key --> APIClient
+      Cookies -- persist/read fallback count --> UI
     APIClient -- HTTP POST --> External["OpenRouter API<br>(Free Vision Models)"]
     External -- JSON response --> APIClient
     APIClient -- parsed results --> UI
@@ -71,8 +78,10 @@ flowchart TB
 
      UI:::frontend
      PIL:::app
+   PDF:::app
      APIClient:::app
      Session:::app
+   Cookies:::app
      Browser:::frontend
      External:::external
      Deployment:::deployment
@@ -82,15 +91,19 @@ flowchart TB
     classDef deployment fill:#E5E7E9,stroke:#566573
     style UI color:#000000
     style PIL color:#000000
+   style PDF color:#000000
     style APIClient color:#000000
     style Session color:#000000
+   style Cookies color:#000000
     style Browser color:#000000
     style External color:#000000
     style Deployment color:#000000
     click UI "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
     click PIL "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
+   click PDF "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
     click APIClient "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
     click Session "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
+   click Cookies "https://github.com/bcastelino/ocr-text-vision-pro/blob/main/ocr_app.py"
 
 ```
 
@@ -99,9 +112,9 @@ flowchart TB
 ### Option 1: Streamlit Community Cloud (Recommended)
 1. **[Deploy directly](https://share.streamlit.io/)** — No setup required!
 2. Optionally enter your [OpenRouter API key](https://openrouter.ai/settings/keys) in the sidebar (free to get)
-   - Without a key, you get **5 free API calls per session** using the built-in fallback key
+   - Without a key, you get **5 fallback API calls**, tracked via browser cookie persistence
 3. Select a vision model from the sidebar dropdown
-4. Start uploading images and extracting text!
+4. Use image tabs for OCR/chat or open **📑 PDF Scan & Extract** for PDF processing.
 
 ### Option 2: Local Development
 ```bash
@@ -132,7 +145,9 @@ docker run -p 8501:8501 ocr-text-vision-pro
 - **Frontend**: Streamlit (Python web framework)
 - **AI Models**: NVIDIA Nemotron Nano 12B 2 VL, Google Gemma 3 27B, Mistral Small 3.1 24B (all free via OpenRouter)
 - **Image Processing**: PIL/Pillow
+- **PDF Processing**: PyMuPDF (`fitz`)
 - **HTTP Client**: Requests
+- **Cookie Persistence**: streamlit-cookies-controller
 - **Deployment**: Streamlit Community Cloud
 
 ## 📋 Requirements
@@ -144,6 +159,7 @@ docker run -p 8501:8501 ocr-text-vision-pro
 ## 🎯 Use Cases
 
 - **Students**: Extract text from lecture slides and handwritten notes
+- **Analysts**: Scan selected PDF pages and extract structured insights
 - **Researchers**: Convert mathematical equations to LaTeX
 - **Developers**: Extract code from screenshots and documentation
 - **Business**: Process invoices, receipts, and contracts
@@ -153,8 +169,8 @@ docker run -p 8501:8501 ocr-text-vision-pro
 
 - User-provided API keys are stored only in session state (never persisted to disk)
 - The built-in fallback key is stored in Streamlit Secrets and is never exposed to the client
-- Fallback key usage is capped at **5 calls per session** to prevent abuse
-- No image data is stored on the server — images are base64-encoded and sent directly to OpenRouter
+- Fallback key usage is capped at **5 calls per browser cookie lifecycle** to prevent abuse
+- No image/PDF data is stored on the server — uploaded content is converted to base64 and sent directly to OpenRouter
 - All processing happens through the secure OpenRouter API
 - Runs entirely in your browser session
 
