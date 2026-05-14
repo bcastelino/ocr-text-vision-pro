@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode — shades of red */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --primary: 0 78% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 30% 96%;
+    --secondary-foreground: 0 50% 18%;
+    --muted: 0 20% 95%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 0 80% 96%;
+    --accent-foreground: 0 78% 35%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 20% 90%;
+    --input: 0 20% 90%;
+    --ring: 0 78% 48%;
+    --grad-start: 0 80% 52%;
+    --grad-mid: 14 88% 52%;
+    --grad-end: 350 80% 48%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark mode — shades of gold */
+    --background: 35 18% 5%;
+    --foreground: 45 30% 96%;
+    --card: 35 14% 8%;
+    --card-foreground: 45 30% 96%;
+    --primary: 43 95% 62%;
+    --primary-foreground: 35 30% 10%;
+    --secondary: 38 14% 14%;
+    --secondary-foreground: 45 30% 96%;
+    --muted: 38 12% 14%;
+    --muted-foreground: 40 12% 65%;
+    --accent: 40 50% 18%;
+    --accent-foreground: 45 95% 80%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 40 14% 20%;
+    --input: 40 14% 20%;
+    --ring: 43 95% 62%;
+    --grad-start: 43 95% 62%;
+    --grad-mid: 30 95% 58%;
+    --grad-end: 20 90% 52%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(120deg,
+        hsl(var(--grad-start)) 0%,
+        hsl(var(--grad-mid)) 50%,
+        hsl(var(--grad-end)) 100%);
+  }
+
+  .gradient-bg {
+    background-image: linear-gradient(120deg,
+        hsl(var(--grad-start)),
+        hsl(var(--grad-mid)) 55%,
+        hsl(var(--grad-end)));
+  }
+
+  .glass {
+    background: hsl(var(--card) / 0.85);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+
+  .glass-strong {
+    background: hsl(var(--card) / 0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid hsl(var(--border) / 0.8);
+  }
+
+  .prose-result {
+    @apply leading-relaxed;
+  }
+
+  .prose-result h1,
+  .prose-result h2,
+  .prose-result h3 {
+    @apply font-semibold mt-4 mb-2;
+  }
+
+  .prose-result h1 {
+    @apply text-xl;
+  }
+
+  .prose-result h2 {
+    @apply text-lg;
+  }
+
+  .prose-result h3 {
+    @apply text-base;
+  }
+
+  .prose-result p {
+    @apply my-2;
+  }
+
+  .prose-result ul {
+    @apply list-disc pl-6 my-2;
+  }
+
+  .prose-result ol {
+    @apply list-decimal pl-6 my-2;
+  }
+
+  .prose-result code {
+    @apply rounded bg-muted px-1.5 py-0.5 text-[0.85em] font-mono;
+  }
+
+  .prose-result pre {
+    @apply rounded-lg bg-muted p-4 my-3 overflow-x-auto;
+  }
+
+  .prose-result pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+
+  .prose-result a {
+    @apply text-primary underline underline-offset-4 hover:opacity-80;
+  }
+
+  .prose-result blockquote {
+    @apply border-l-2 border-primary/60 pl-4 italic text-muted-foreground my-3;
+  }
+
+  .prose-result table {
+    @apply w-full text-sm border-collapse my-3;
+  }
+
+  .prose-result th,
+  .prose-result td {
+    @apply border border-border px-3 py-2 text-left;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

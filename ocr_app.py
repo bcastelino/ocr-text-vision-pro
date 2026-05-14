@@ -64,11 +64,49 @@ st.markdown("""
 # OpenRouter API Endpoint
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Available free vision models on OpenRouter
+# Available vision models on OpenRouter
+MODEL_GROUPS = {
+    "Free models": {
+        "NVIDIA: Nemotron Nano 12B 2 VL": {
+            "id": "nvidia/nemotron-nano-12b-v2-vl:free",
+            "input": "$0.00",
+            "output": "$0.00",
+        },
+        "Google: Gemma 3 27B": {
+            "id": "google/gemma-3-27b-it:free",
+            "input": "$0.00",
+            "output": "$0.00",
+        },
+        "Mistral: Mistral Small 3.1 24B": {
+            "id": "mistralai/mistral-small-3.1-24b-instruct:free",
+            "input": "$0.00",
+            "output": "$0.00",
+        },
+    },
+    "Paid models": {
+        "Meta: Llama 3.2 11B Vision Instruct": {
+            "id": "meta-llama/llama-3.2-11b-vision-instruct",
+            "input": "$0.245",
+            "output": "$0.245",
+        },
+        "Qwen: Qwen3 VL 32B Instruct": {
+            "id": "qwen/qwen3-vl-32b-instruct",
+            "input": "$0.104",
+            "output": "$0.416",
+        },
+    },
+    "Universal": {
+        "OpenRouter: Auto Router": {
+            "id": "openrouter/auto",
+            "input": "Varies",
+            "output": "Varies",
+        },
+    },
+}
 AVAILABLE_MODELS = {
-    "NVIDIA: Nemotron Nano 12B 2 VL": "nvidia/nemotron-nano-12b-v2-vl:free",
-    "Google: Gemma 3 27B": "google/gemma-3-27b-it:free",
-    "Mistral: Mistral Small 3.1 24B": "mistralai/mistral-small-3.1-24b-instruct:free",
+    label: details
+    for models in MODEL_GROUPS.values()
+    for label, details in models.items()
 }
 
 # Maximum number of API calls allowed using the built-in fallback key per session
@@ -126,7 +164,7 @@ def _make_openrouter_call(api_key, messages, site_url="", site_name="OCR Text Vi
         "X-Title": "OCR Text Vision Pro", # Optional. Site title for rankings on openrouter.ai.
     }
     selected = st.session_state.get("selected_model", list(AVAILABLE_MODELS)[0])
-    model_id = AVAILABLE_MODELS.get(selected, list(AVAILABLE_MODELS.values())[0])
+    model_id = AVAILABLE_MODELS.get(selected, list(AVAILABLE_MODELS.values())[0])["id"]
     payload = json.dumps({
         "model": model_id,
         "messages": messages,
@@ -317,13 +355,25 @@ with st.sidebar:
     st.markdown("---")
 
     # Model selector dropdown
-    st.session_state.selected_model = st.selectbox(
+    model_options = [
+        model
+        for group, models in MODEL_GROUPS.items()
+        for model in [f"— {group} —", *models.keys()]
+    ]
+    selectable_models = list(AVAILABLE_MODELS.keys())
+    selected_option = st.selectbox(
         "Select Vision Model:",
-        options=list(AVAILABLE_MODELS.keys()),
-        index=list(AVAILABLE_MODELS.keys()).index(st.session_state.selected_model),
-        help="Choose which free vision model to use for OCR and image understanding.",
+        options=model_options,
+        index=model_options.index(st.session_state.selected_model),
+        help="Choose which vision model to use for OCR and image understanding.",
     )
-    st.caption(f"Model ID: `{AVAILABLE_MODELS[st.session_state.selected_model]}`")
+    if selected_option.startswith("— "):
+        st.session_state.selected_model = selectable_models[0]
+    else:
+        st.session_state.selected_model = selected_option
+    selected_model = AVAILABLE_MODELS[st.session_state.selected_model]
+    st.caption(f"Model ID: `{selected_model['id']}`")
+    st.caption(f"Cost per 1M tokens: input `{selected_model['input']}` · output `{selected_model['output']}`")
 
     st.markdown("---")
     st.header("💻 About This App")

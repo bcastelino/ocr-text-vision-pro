@@ -1,7 +1,7 @@
 <div align="center">
 <img src="https://cdn-icons-png.flaticon.com/512/5262/5262022.png" alt="OCR Text Vision Pro Icon" width="90"/>
 
- # OCR Text Vision Pro
+# OCR Text Vision Pro
 
 > AI-powered OCR application leveraging free vision models via OpenRouter for advanced image understanding and text extraction
 
@@ -25,28 +25,33 @@ Select your preferred vision model from the sidebar dropdown. All models are fre
 ## ✨ Features
 
 ### 📈 Extract & Convert
+
 - **Text Extraction**: Extract readable content from any image
 - **LaTeX Conversion**: Convert mathematical equations to LaTeX code with live rendering
 - **Code Extraction**: Extract and format code snippets from screenshots
 - **Chart Analysis**: Describe charts, diagrams, and visual data
 
 ### 🎯 Ask, Analyze & Chat
+
 - **One-time Answer Mode**: Ask a direct question on an uploaded image
 - **Document Intelligence Scope**: Extract invoice numbers, dates, totals, and structured document fields
 - **Visual Question Answering Scope**: Reason about scenes, objects, and image context
 - **Chat Session Mode**: Multi-turn conversation over the same uploaded image with history
 
 ### 📑 PDF Scan & Extract
+
 - **Native PDF Upload**: Upload PDF files directly
 - **Flexible Page Selection**: Scan all pages or specific pages/ranges like `1-5, 8, 12, 34`
 - **Multi-page Vision Parsing**: Converts selected pages to images and sends them in one request
 - **Shared Extraction Modes**: Text, LaTeX, Code, and Chart/Diagram extraction from PDF pages
 
 ### 📱 Responsive Experience
+
 - **Mobile, Tablet, Desktop Adaptation**: Layout and spacing optimized with breakpoints
 - **Adaptive Tabs and Typography**: Better readability and navigation across screen sizes
 
 ## 🔁 Workflow
+
 ```mermaid
 ---
 config:
@@ -109,7 +114,22 @@ flowchart TB
 
 ## 🚀 Quick Start
 
+### Option 0: GitHub Pages (Modern UI, ✨ NEW)
+
+A second, fully animated React build lives in [`web/`](web/) and deploys automatically to GitHub Pages:
+
+> **<https://bcastelino.github.io/ocr-text-vision-pro/>**
+
+- Built with **Vite + React + TailwindCSS + framer-motion + Three.js** (animated dotted-surface background).
+- Scroll-triggered fades, staggered reveals, smooth hover transitions.
+- 100% client-side — bring your own [free OpenRouter API key](https://openrouter.ai/settings/keys) (stored in `localStorage`).
+- The 5-call developer-fallback key is intentionally **Streamlit-only** for security reasons.
+- See [`web/README.md`](web/README.md) for local dev instructions.
+
+> The Streamlit version below remains live and unchanged.
+
 ### Option 1: Streamlit Community Cloud (Recommended)
+
 1. **[Deploy directly](https://share.streamlit.io/)** — No setup required!
 2. Optionally enter your [OpenRouter API key](https://openrouter.ai/settings/keys) in the sidebar (free to get)
    - Without a key, you get **5 fallback API calls**, tracked via browser cookie persistence
@@ -117,6 +137,7 @@ flowchart TB
 4. Use image tabs for OCR/chat or open **📑 PDF Scan & Extract** for PDF processing.
 
 ### Option 2: Local Development
+
 ```bash
 # Clone the repository
 git clone https://github.com/bcastelino/ocr-text-vision-pro.git
@@ -134,6 +155,7 @@ streamlit run ocr_app.py
 ```
 
 ### Option 3: Docker
+
 ```bash
 # Build and run with Docker
 docker build -t ocr-text-vision-pro .
