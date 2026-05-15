@@ -1,26 +1,111 @@
 <div align="center">
-<img src="https://cdn-icons-png.flaticon.com/512/5262/5262022.png" alt="OCR Text Vision Pro Icon" width="90"/>
+
+<img src="https://cdn-icons-png.flaticon.com/512/5262/5262022.png" alt="OCR Text Vision Pro" width="96"/>
 
 # OCR Text Vision Pro
 
-> AI-powered OCR application leveraging free vision models via OpenRouter for advanced image understanding and text extraction
+> Advanced image understanding and text extraction, powered by free vision-language models on OpenRouter
 
-[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python&logoColor=white)](https://python.org/)
-[![OpenRouter](https://img.shields.io/badge/OpenRouter-API-green?style=for-the-badge)](https://openrouter.ai/)
+<p>
+  <a href="https://bcastelino.github.io/ocr-text-vision-pro/"><img src="https://img.shields.io/badge/Live_Demo-GitHub_Pages-111827?style=for-the-badge&logo=github&logoColor=white" alt="Live Demo"/></a>
+  <a href="https://ocr-text-vision-pro.streamlit.app/"><img src="https://img.shields.io/badge/Live_Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit Demo"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge" alt="MIT License"/></a>
+  <a href="https://github.com/bcastelino/ocr-text-vision-pro/stargazers"><img src="https://img.shields.io/github/stars/bcastelino/ocr-text-vision-pro?style=for-the-badge&color=F59E0B" alt="GitHub Stars"/></a>
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React 18"/>
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 5"/>
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/TailwindCSS-3-38BDF8?style=flat-square&logo=tailwindcss&logoColor=white" alt="TailwindCSS"/>
+  <img src="https://img.shields.io/badge/Streamlit-1.x-FF4B4B?style=flat-square&logo=streamlit&logoColor=white" alt="Streamlit"/>
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11"/>
+  <img src="https://img.shields.io/badge/OpenRouter-API-10B981?style=flat-square" alt="OpenRouter"/>
+</p>
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="https://bcastelino.github.io/ocr-text-vision-pro/">
+        <img src="https://cdn.brandfetch.io/idZAyF9rlg/w/800/h/784/theme/light/symbol.png?c=1bxid64Mup7aczewSAYMX&t=1719469980826" alt="GitHub" height="15" align="center"/>
+        &nbsp;<b>GitHub Pages App</b>
+      </a><br/>
+      <sub>Animated React UI &middot; fully client-side</sub>
+    </td>
+    <td align="center" width="50%">
+      <a href="https://ocr-text-vision-pro.streamlit.app/">
+        <img src="https://cdn.brandfetch.io/idiyFucwEQ/w/800/h/438/theme/dark/symbol.png?c=1bxid64Mup7aczewSAYMX&t=1668515715588" alt="Streamlit" height="15" align="center"/>
+        &nbsp;<b>Streamlit App</b>
+      </a><br/>
+      <sub>Python UI &middot; built-in fallback API key</sub>
+    </td>
+  </tr>
+</table>
+
 </div>
+
+---
+
+## 🌐 The GitHub Pages App (primary)
+
+> **Live:** <https://bcastelino.github.io/ocr-text-vision-pro/>
+
+A fully animated, fully client-side rebuild of OCR Text Vision Pro, deployed automatically to GitHub Pages via CI. The source lives in [`web/`](web/) and is the **recommended way to use the app**.
+
+### Highlights
+
+- ⚡ **Vite + React 18 + TypeScript** - instant load, type-safe end to end.
+- 🎨 **Tailwind + shadcn-style primitives** - light/dark themes with red/gold accent palettes.
+- 🌀 **framer-motion** - scroll-triggered fades, staggered reveals, tab transitions, hover micro-interactions.
+- 🌌 **Three.js dotted-surface background** - theme-aware animated particles (ported from [21st.dev](https://21st.dev/community/components/efferd/dotted-surface)).
+- 📄 **Client-side PDF rendering** via `pdfjs-dist` - pages render in your browser before being sent as images.
+- 🧮 **KaTeX + remark-math** - LaTeX results render live alongside the source.
+- 🔐 **localStorage only** - your OpenRouter key never leaves the browser except to call OpenRouter.
+- 🚀 **Free deploy on GitHub Pages** - see [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml).
+
+## 🐍 The Streamlit App (secondary)
+
+> **Live:** <https://ocr-text-vision-pro.streamlit.app/>
+
+The original Python/Streamlit application (`ocr_app.py`) is still fully supported. It remains the **only** version that offers the **5-call developer-fallback API key** (the key is stored in `streamlit.secrets` and can't be safely exposed in a static GitHub Pages bundle).
+
+Use the Streamlit version when:
+
+- You want to try the app without creating an OpenRouter account.
+- You're more comfortable running Python locally.
+- You want a deployable Docker image (see `Dockerfile`).
+
+---
+
+### Differences vs. the Streamlit build
+
+| Feature                              | GitHub Pages | Streamlit |
+| ------------------------------------ | :----------: | :-------: |
+| User-supplied OpenRouter key         | ✅           | ✅        |
+| 5-call developer-fallback key        | ❌ (insecure on a static site) | ✅ |
+| Extract / Ask / Chat / PDF workflows | ✅           | ✅        |
+| Model selector (free + paid + auto)  | ✅           | ✅ (free only) |
+| Dark mode                            | ✅ (theme-aware) | partial |
+| Animated UI / 3D background          | ✅           | ❌        |
+
+See [`web/README.md`](web/README.md) for local-development instructions for the React build.
+
+---
 
 ## 🤖 Available Models
 
-Select your preferred vision model from the sidebar dropdown. All models are free via OpenRouter:
+Models are managed in [`web/src/lib/models.ts`](web/src/lib/models.ts) for the React build and inside `ocr_app.py` for Streamlit. The GitHub Pages app exposes free, paid, and a universal auto-router tier; the Streamlit app ships the free tier only.
 
-| Model | Model ID | Context | Strengths |
-|---|---|---|---|
-| **NVIDIA: Nemotron Nano 12B 2 VL** | `nvidia/nemotron-nano-12b-v2-vl:free` | 128K | #1 on OCRBench v2 — best for OCR, DocVQA, ChartQA |
-| **Google: Gemma 3 27B** | `google/gemma-3-27b-it:free` | 131K | General vision-language, multilingual (140+ langs) |
-| **Mistral: Mistral Small 3.1 24B** | `mistralai/mistral-small-3.1-24b-instruct:free` | 128K | Image analysis, reasoning, code, math, multilingual |
+| Model | Model ID | Context | Tier | Input / 1M | Output / 1M | Strengths |
+|---|---|---|---|---|---|---|
+| **NVIDIA: Nemotron Nano 12B 2 VL** ⭐ default | `nvidia/nemotron-nano-12b-v2-vl:free` | 128K | Free | $0.00 | $0.00 | #1 on OCRBench v2 - best for OCR, DocVQA, ChartQA |
+| **Google: Gemma 3 27B** | `google/gemma-3-27b-it:free` | 131K | Free | $0.00 | $0.00 | General vision-language, multilingual (140+ langs) |
+| **Mistral: Mistral Small 3.1 24B** | `mistralai/mistral-small-3.1-24b-instruct:free` | 128K | Free | $0.00 | $0.00 | Image analysis, reasoning, code, math, multilingual |
+| **Meta: Llama 3.2 11B Vision Instruct** | `meta-llama/llama-3.2-11b-vision-instruct` | 131K | Paid | $0.245 | $0.245 | Multimodal image reasoning, captioning, VQA |
+| **Qwen: Qwen3 VL 32B Instruct** | `qwen/qwen3-vl-32b-instruct` | 131K | Paid | $0.104 | $0.416 | High-precision multimodal understanding (text, image, video) |
+| **OpenRouter: Auto Router** | `openrouter/auto` | 2M | Universal | Varies | Varies | Automatically selects the best model for each request |
 
-> **Default**: NVIDIA Nemotron Nano 12B 2 VL is selected by default due to its purpose-built OCR capabilities.
+> **Default**: NVIDIA Nemotron Nano 12B 2 VL is pre-selected in both apps due to its purpose-built OCR capabilities.
 
 ## ✨ Features
 
@@ -112,65 +197,31 @@ flowchart TB
 
 ```
 
-## 🚀 Quick Start
-
-### Option 0: GitHub Pages (Modern UI, ✨ NEW)
-
-A second, fully animated React build lives in [`web/`](web/) and deploys automatically to GitHub Pages:
-
-> **<https://bcastelino.github.io/ocr-text-vision-pro/>**
-
-- Built with **Vite + React + TailwindCSS + framer-motion + Three.js** (animated dotted-surface background).
-- Scroll-triggered fades, staggered reveals, smooth hover transitions.
-- 100% client-side — bring your own [free OpenRouter API key](https://openrouter.ai/settings/keys) (stored in `localStorage`).
-- The 5-call developer-fallback key is intentionally **Streamlit-only** for security reasons.
-- See [`web/README.md`](web/README.md) for local dev instructions.
-
-> The Streamlit version below remains live and unchanged.
-
-### Option 1: Streamlit Community Cloud (Recommended)
-
-1. **[Deploy directly](https://share.streamlit.io/)** — No setup required!
-2. Optionally enter your [OpenRouter API key](https://openrouter.ai/settings/keys) in the sidebar (free to get)
-   - Without a key, you get **5 fallback API calls**, tracked via browser cookie persistence
-3. Select a vision model from the sidebar dropdown
-4. Use image tabs for OCR/chat or open **📑 PDF Scan & Extract** for PDF processing.
-
-### Option 2: Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/bcastelino/ocr-text-vision-pro.git
-cd ocr-text-vision-pro
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Add your fallback developer API key (optional)
-# Edit .streamlit/secrets.toml and replace the placeholder:
-# OPENROUTER_API_KEY = "sk-or-v1-your-key-here"
-
-# Run the application
-streamlit run ocr_app.py
-```
-
-### Option 3: Docker
-
-```bash
-# Build and run with Docker
-docker build -t ocr-text-vision-pro .
-docker run -p 8501:8501 ocr-text-vision-pro
-```
-
 ## 🔧 Tech Stack
 
-- **Frontend**: Streamlit (Python web framework)
-- **AI Models**: NVIDIA Nemotron Nano 12B 2 VL, Google Gemma 3 27B, Mistral Small 3.1 24B (all free via OpenRouter)
-- **Image Processing**: PIL/Pillow
-- **PDF Processing**: PyMuPDF (`fitz`)
-- **HTTP Client**: Requests
-- **Cookie Persistence**: streamlit-cookies-controller
-- **Deployment**: Streamlit Community Cloud
+### GitHub Pages app (`web/`)
+
+- **Framework:** Vite + React 18 + TypeScript
+- **Styling:** TailwindCSS, custom shadcn-style primitives on Radix UI
+- **Animation:** framer-motion, Three.js dotted-surface background
+- **PDF rendering:** `pdfjs-dist` (fully client-side)
+- **Markdown / Math:** `react-markdown` + `remark-gfm` + `remark-math` + `rehype-katex`
+- **Theme:** `next-themes` (system / dark / light, red & gold palettes)
+- **Hosting:** GitHub Pages via GitHub Actions
+
+### Streamlit app (`ocr_app.py`)
+
+- **Framework:** Streamlit (Python)
+- **Image processing:** PIL/Pillow
+- **PDF processing:** PyMuPDF (`fitz`)
+- **HTTP client:** Requests
+- **Cookie persistence:** `streamlit-cookies-controller`
+- **Hosting:** Streamlit Community Cloud (Docker-ready)
+
+### Shared
+
+- **Models:** NVIDIA Nemotron Nano 12B 2 VL, Google Gemma 3 27B, Mistral Small 3.1 24B, plus Llama 3.2 11B Vision, Qwen3 VL 32B, and the OpenRouter Auto Router (GH Pages app only).
+- **Inference:** [OpenRouter API](https://openrouter.ai/)
 
 ## 📋 Requirements
 
@@ -189,12 +240,19 @@ docker run -p 8501:8501 ocr-text-vision-pro
 
 ## 🔐 Privacy & Security
 
-- User-provided API keys are stored only in session state (never persisted to disk)
-- The built-in fallback key is stored in Streamlit Secrets and is never exposed to the client
-- Fallback key usage is capped at **5 calls per browser cookie lifecycle** to prevent abuse
-- No image/PDF data is stored on the server — uploaded content is converted to base64 and sent directly to OpenRouter
-- All processing happens through the secure OpenRouter API
-- Runs entirely in your browser session
+**GitHub Pages app**
+
+- 100% client-side. There is no server.
+- Your OpenRouter API key lives only in your browser's `localStorage`.
+- Images and PDF page renders are converted to base64 in-browser and POSTed directly to OpenRouter - they never touch any infrastructure I control.
+- No analytics, no tracking, no cookies.
+
+**Streamlit app**
+
+- User-provided API keys live only in Streamlit session state (never persisted to disk).
+- The built-in fallback key is stored in Streamlit Secrets and is never exposed to the client.
+- Fallback key usage is capped at **5 calls per browser cookie lifecycle** to prevent abuse.
+- Image/PDF data is converted to base64 in-memory and sent directly to OpenRouter - nothing is stored on the Streamlit server.
 
 ## 🤝 Contributing
 
@@ -251,5 +309,5 @@ This project is open source and available under the [MIT License](LICENSE).
 ---
 
 <div align="center">
-Made with ❤️ using Streamlit and free vision models via OpenRouter
+Made with ❤️ using React, Streamlit and free vision models via OpenRouter
 </div>
