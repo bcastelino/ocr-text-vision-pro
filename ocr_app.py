@@ -67,6 +67,11 @@ OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 # Available vision models on OpenRouter
 MODEL_GROUPS = {
     "Free models": {
+        "OpenRouter: Free Auto Router": {
+            "id": "openrouter/free",
+            "input": "$0.00",
+            "output": "$0.00",
+        },
         "NVIDIA: Nemotron Nano 12B 2 VL": {
             "id": "nvidia/nemotron-nano-12b-v2-vl:free",
             "input": "$0.00",

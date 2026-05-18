@@ -98,14 +98,15 @@ Models are managed in [`web/src/lib/models.ts`](web/src/lib/models.ts) for the R
 
 | Model | Model ID | Context | Tier | Input / 1M | Output / 1M | Strengths |
 |---|---|---|---|---|---|---|
-| **NVIDIA: Nemotron Nano 12B 2 VL** ⭐ default | `nvidia/nemotron-nano-12b-v2-vl:free` | 128K | Free | $0.00 | $0.00 | #1 on OCRBench v2 - best for OCR, DocVQA, ChartQA |
+| **OpenRouter: Free Auto Router** ⭐ default | `openrouter/free` | Varies | Free | $0.00 | $0.00 | Automatically selects the best free model for each request based on required features |
+| **NVIDIA: Nemotron Nano 12B 2 VL** | `nvidia/nemotron-nano-12b-v2-vl:free` | 128K | Free | $0.00 | $0.00 | #1 on OCRBench v2 - best for OCR, DocVQA, ChartQA |
 | **Google: Gemma 3 27B** | `google/gemma-3-27b-it:free` | 131K | Free | $0.00 | $0.00 | General vision-language, multilingual (140+ langs) |
 | **Mistral: Mistral Small 3.1 24B** | `mistralai/mistral-small-3.1-24b-instruct:free` | 128K | Free | $0.00 | $0.00 | Image analysis, reasoning, code, math, multilingual |
 | **Meta: Llama 3.2 11B Vision Instruct** | `meta-llama/llama-3.2-11b-vision-instruct` | 131K | Paid | $0.245 | $0.245 | Multimodal image reasoning, captioning, VQA |
 | **Qwen: Qwen3 VL 32B Instruct** | `qwen/qwen3-vl-32b-instruct` | 131K | Paid | $0.104 | $0.416 | High-precision multimodal understanding (text, image, video) |
 | **OpenRouter: Auto Router** | `openrouter/auto` | 2M | Universal | Varies | Varies | Automatically selects the best model for each request |
 
-> **Default**: NVIDIA Nemotron Nano 12B 2 VL is pre-selected in both apps due to its purpose-built OCR capabilities.
+> **Default**: OpenRouter Free Auto Router is pre-selected in both apps for optimal free model selection based on request requirements.
 
 ## ✨ Features
 

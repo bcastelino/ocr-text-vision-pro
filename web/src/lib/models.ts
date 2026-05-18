@@ -10,6 +10,15 @@ export interface VisionModel {
 
 export const AVAILABLE_MODELS: VisionModel[] = [
   {
+    id: 'openrouter/free',
+    label: 'OpenRouter: Free Auto Router',
+    context: 'Varies',
+    strengths: 'Automatically selects the best free model for each request based on required features',
+    tier: 'free',
+    inputCostPerMillion: '$0.00',
+    outputCostPerMillion: '$0.00',
+  },
+  {
     id: 'nvidia/nemotron-nano-12b-v2-vl:free',
     label: 'NVIDIA: Nemotron Nano 12B 2 VL',
     context: '128K',
